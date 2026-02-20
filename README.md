@@ -2,7 +2,7 @@
 
 Một công cụ dòng lệnh (CLI) mạnh mẽ được viết bằng Python, giúp tải xuống các luồng HLS (.m3u8) và chuyển đổi các phân đoạn video (.ts) sang định dạng MP4. 
 
-Công cụ này được thiết kế đặc biệt để "phá đảo" các kỹ thuật **Content-Type Spoofing** (ngụy trang video dưới dạng file ảnh PNG/JPG) thường thấy trên các hệ thống CDN của TikTok hoặc các trang web phim.
+Công cụ này được thiết kế đặc biệt để xử lý các kỹ thuật **Content-Type Spoofing** (ngụy trang video dưới dạng file ảnh PNG/JPG) thường thấy trên các hệ thống CDN của TikTok hoặc các trang web phim.
 
 ## ✨ Tính năng nổi bật
 
