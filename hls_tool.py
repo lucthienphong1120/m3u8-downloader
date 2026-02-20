@@ -20,13 +20,10 @@ class VideoDownloader:
             subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True)
             return True
         except:
-            print("[!] Lỗi: Không tìm thấy FFmpeg. Hãy đảm bảo FFmpeg đã được cài đặt."); return False
+            print("[!] Lỗi: Không tìm thấy FFmpeg."); return False
 
     def get_unique_filename(self, filename):
-        """Tự động đánh số nếu file đã tồn tại: video.mp4 -> video(1).mp4"""
-        if not os.path.exists(filename):
-            return filename
-        
+        if not os.path.exists(filename): return filename
         name, ext = os.path.splitext(filename)
         counter = 1
         while os.path.exists(f"{name}({counter}){ext}"):
@@ -59,8 +56,13 @@ class VideoDownloader:
             '-c:a', 'aac', '-b:a', '128k',
             '-movflags', '+faststart', output_file
         ]
-        # Chạy ẩn log FFmpeg để menu trông gọn gàng hơn, chỉ hiện lỗi nếu có
         subprocess.run(cmd, capture_output=True)
+
+    def ask_output_name(self):
+        out_input = input("Tên file lưu (VD: video.mp4): ").strip()
+        base_name = out_input if out_input else "video.mp4"
+        if not base_name.endswith('.mp4'): base_name += '.mp4'
+        return self.get_unique_filename(base_name)
 
     def run(self):
         if not self.check_ffmpeg(): return
@@ -68,41 +70,38 @@ class VideoDownloader:
         while True:
             self.clear_screen()
             print("="*45)
-            print("   HLS/TS TOOL - BẢN TỰ ĐỘNG ĐÁNH SỐ FILE")
+            print("   HLS/TS TOOL - BẢN CẬP NHẬT UX")
             print("="*45)
             print("1. Tải từ Link M3U8 (URL)")
-            print("2. Tải từ File M3U8 (Mặc định: tt.m3u8)")
-            print("3. Convert File .ts (Mặc định: video.ts)")
+            print("2. Tải từ File M3U8 (VD: tt.m3u8)")
+            print("3. Convert File .ts (VD: video.ts)")
             print("4. Thoát")
             choice = input("\nChọn (1-4): ")
 
             if choice == '4': break
 
-            # Xử lý tên file đầu ra
-            out_input = input("Tên file lưu (Mặc định: video.mp4): ").strip()
-            base_name = out_input if out_input else "video.mp4"
-            if not base_name.endswith('.mp4'): base_name += '.mp4'
-            
-            # Kích hoạt tính năng đánh số tự động
-            output_name = self.get_unique_filename(base_name)
-
             if choice == '1':
                 source = input("Nhập URL M3U8: ").strip('"')
-                if source: self.handle_download(source, output_name)
+                if not source: continue
+                output_name = self.ask_output_name()
+                self.handle_download(source, output_name)
 
             elif choice == '2':
-                src_input = input("File M3U8 (Mặc định: tt.m3u8): ").strip('"')
+                src_input = input("Đường dẫn file M3U8 (VD: tt.m3u8): ").strip('"')
                 source = src_input if src_input else "tt.m3u8"
-                if os.path.exists(source): self.handle_download(source, output_name)
+                if os.path.exists(source):
+                    output_name = self.ask_output_name()
+                    self.handle_download(source, output_name)
                 else: print(f"[!] Không thấy file {source}"); input()
 
             elif choice == '3':
-                ts_input = input("File .ts (Mặc định: video.ts): ").strip('"')
-                ts_file = ts_input if ts_input else "video.ts"
-                if os.path.exists(ts_file):
-                    self.process_conversion(ts_file, output_name)
+                ts_input = input("Đường dẫn file .ts (VD: video.ts): ").strip('"')
+                source = ts_input if ts_input else "video.ts"
+                if os.path.exists(source):
+                    output_name = self.ask_output_name()
+                    self.process_conversion(source, output_name)
                     print(f"\n[!] THÀNH CÔNG: {output_name}")
-                else: print(f"[!] Không thấy file {ts_file}"); input()
+                else: print(f"[!] Không thấy file {source}"); input()
 
             input("\nNhấn Enter để tiếp tục...")
 
