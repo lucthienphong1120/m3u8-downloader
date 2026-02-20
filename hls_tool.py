@@ -2,7 +2,6 @@ import requests
 import re
 import os
 import subprocess
-import sys
 from concurrent.futures import ThreadPoolExecutor
 
 class VideoDownloader:
@@ -21,8 +20,7 @@ class VideoDownloader:
             subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True)
             return True
         except:
-            print("[!] Lỗi: Không tìm thấy FFmpeg. Vui lòng cài đặt FFmpeg trước.")
-            return False
+            print("[!] Lỗi: Không tìm thấy FFmpeg trong hệ thống."); return False
 
     def get_urls_from_m3u8(self, source):
         try:
@@ -31,24 +29,19 @@ class VideoDownloader:
             else:
                 with open(source, 'r', encoding='utf-8') as f:
                     content = f.read()
-            
-            # Regex lấy tất cả các link (tuyệt đối hoặc tương đối)
             urls = re.findall(r'https?://[^\s<>"]+|(?<=^)[^\s#]+', content, re.M)
             return [u.strip() for u in urls if u.strip()]
         except Exception as e:
-            print(f"[!] Lỗi khi đọc M3U8: {e}")
-            return []
+            print(f"[!] Lỗi đọc file/link: {e}"); return []
 
     def download_segment(self, url):
         try:
             res = requests.get(url, headers=self.headers, timeout=10)
             return res.content if res.status_code == 200 else None
-        except:
-            return None
+        except: return None
 
     def process_conversion(self, input_file, output_file):
-        print(f"[*] Đang ép FFmpeg xử lý luồng dữ liệu thô...")
-        # Sử dụng -f mpegts để phá lớp mặt nạ PNG giả mạo
+        print(f"[*] Đang chuyển đổi {input_file} -> {output_file}...")
         cmd = [
             'ffmpeg', '-y', '-f', 'mpegts', '-i', input_file,
             '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
@@ -62,51 +55,63 @@ class VideoDownloader:
 
         while True:
             self.clear_screen()
-            print("="*40)
-            print("   HLS/TS VIDEO DOWNLOADER - FINAL")
-            print("="*40)
+            print("="*45)
+            print("      HLS/TS TOOL - PHIÊN BẢN ENTER NHANH")
+            print("="*45)
             print("1. Tải từ Link M3U8 (URL)")
-            print("2. Tải từ File M3U8 cục bộ")
-            print("3. Chuyển đổi File .ts có sẵn sang .mp4")
+            print("2. Tải từ File M3U8 (Mặc định: tt.m3u8)")
+            print("3. Convert File .ts (Mặc định: video.ts)")
             print("4. Thoát")
-            choice = input("\nChọn tùy chọn (1-4): ")
+            choice = input("\nChọn (1-4): ")
 
             if choice == '4': break
 
-            output_name = input("Nhập tên file đầu ra (VD: video.mp4): ") or "output.mp4"
+            # Thiết lập tên file đầu ra mặc định
+            out_input = input("Tên file lưu (Mặc định: video.mp4): ").strip()
+            output_name = out_input if out_input else "video.mp4"
             if not output_name.endswith('.mp4'): output_name += '.mp4'
 
-            if choice in ['1', '2']:
-                source = input("Nhập Link URL hoặc Đường dẫn file M3U8: ").strip('"')
-                urls = self.get_urls_from_m3u8(source)
-                
-                if not urls:
-                    print("[!] Không tìm thấy phân đoạn video nào."); input(); continue
+            if choice == '1':
+                source = input("Nhập URL M3U8: ").strip('"')
+                if not source: print("[!] Link không được để trống."); input(); continue
+                self.handle_download(source, output_name)
 
-                print(f"[*] Tìm thấy {len(urls)} đoạn. Đang tải đa luồng...")
-                
-                with open(self.temp_ts, 'wb') as f:
-                    with ThreadPoolExecutor(max_workers=15) as executor:
-                        results = list(executor.map(self.download_segment, urls))
-                        for i, data in enumerate(results):
-                            if data:
-                                f.write(data)
-                                print(f" -> Đã ghép đoạn {i+1}/{len(urls)}", end='\r')
-                
-                print("\n[*] Tải xong. Bắt đầu convert...")
-                self.process_conversion(self.temp_ts, output_name)
-                if os.path.exists(self.temp_ts): os.remove(self.temp_ts)
+            elif choice == '2':
+                src_input = input("Đường dẫn file M3U8 (Mặc định: tt.m3u8): ").strip('"')
+                source = src_input if src_input else "tt.m3u8"
+                if os.path.exists(source):
+                    self.handle_download(source, output_name)
+                else:
+                    print(f"[!] Không tìm thấy file {source}"); input()
 
             elif choice == '3':
-                ts_file = input("Nhập đường dẫn file .ts: ").strip('"')
+                ts_input = input("Đường dẫn file .ts (Mặc định: video.ts): ").strip('"')
+                ts_file = ts_input if ts_input else "video.ts"
                 if os.path.exists(ts_file):
                     self.process_conversion(ts_file, output_name)
+                    print(f"\n[!] XONG: {output_name}")
                 else:
-                    print("[!] File không tồn tại.")
+                    print(f"[!] Không tìm thấy file {ts_file}"); input()
 
-            print(f"\n[!] HOÀN THÀNH: {output_name}")
             input("\nNhấn Enter để quay lại menu...")
 
+    def handle_download(self, source, output_name):
+        urls = self.get_urls_from_m3u8(source)
+        if not urls: return
+        
+        print(f"[*] Tải {len(urls)} đoạn bằng 15 luồng...")
+        with open(self.temp_ts, 'wb') as f:
+            with ThreadPoolExecutor(max_workers=15) as executor:
+                results = list(executor.map(self.download_segment, urls))
+                for i, data in enumerate(results):
+                    if data:
+                        f.write(data)
+                        print(f" -> Tiến độ: {i+1}/{len(urls)}", end='\r')
+        
+        print("\n[*] Tải hoàn tất. Đang đóng gói MP4...")
+        self.process_conversion(self.temp_ts, output_name)
+        if os.path.exists(self.temp_ts): os.remove(self.temp_ts)
+        print(f"\n[!] HOÀN THÀNH: {output_name}")
+
 if __name__ == "__main__":
-    tool = VideoDownloader()
-    tool.run()
+    VideoDownloader().run()
