@@ -34,9 +34,11 @@ def download_and_convert(m3u8_file, output_name):
     # 3. Dùng FFmpeg để sửa header "PNG giả" và nén lại thành MP4 xịn
     # Lệnh này ép FFmpeg quét toàn bộ dữ liệu để tìm luồng video H.264
     cmd = [
-        'ffmpeg', '-y', '-i', temp_ts,
-        '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
-        '-c:a', 'aac', '-b:a', '128k',
+        'ffmpeg', '-y', 
+        '-f', 'mpegts',           # ÉP FFmpeg coi đầu vào là chuẩn video TS
+        '-i', temp_ts, 
+        '-c:v', 'libx264', 
+        '-pix_fmt', 'yuv420p', 
         output_name
     ]
     
