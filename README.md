@@ -38,6 +38,8 @@ Nếu script báo lỗi `Không tìm thấy FFmpeg`, hãy thực hiện các bư
 1. Mở Terminal/CMD tại thư mục chứa file `hls_tool.py`.
 2. Chạy lệnh: `python hls_tool.py`
 
+Hoặc chạy thẳng script tích hợp sẵn: `RunTool.bat`
+
 Các tùy chọn trong Menu:
 + **Option 1 (Link URL)**: Dán link .m3u8 trực tiếp để tải từ internet.
 + **Option 2 (File nội bộ)**: Xử lý file .m3u8 có sẵn trong máy (Mặc định sẽ tìm file tt.m3u8).
